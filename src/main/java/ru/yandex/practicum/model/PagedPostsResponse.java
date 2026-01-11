@@ -1,4 +1,4 @@
-package ru.practicum.my_blog_back_app.model;
+package ru.yandex.practicum.model;
 
 import java.util.List;
 

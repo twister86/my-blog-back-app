@@ -25,16 +25,16 @@ services:
     build: .
     container_name: blog-app
     ports:
-      - "8080:8080"
+      - "8081:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/blogdb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/blogdb
       SPRING_DATASOURCE_USERNAME: bloguser
       SPRING_DATASOURCE_PASSWORD: blogpass
       SPRING_DATASOURCE_DRIVER_CLASS_NAME: org.postgresql.Driver
     depends_on:
       - db
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/api/posts?search=&pageNumber=1&pageSize=1"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/posts?search=&pageNumber=1&pageSize=1"]
       interval: 30s
       timeout: 10s
       retries: 3

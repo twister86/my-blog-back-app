@@ -1,14 +1,16 @@
-package ru.practicum.my_blog_back_app.repository;
+package ru.yandex.practicum.repository;
 
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
-import ru.practicum.my_blog_back_app.model.Post;
+import ru.yandex.practicum.model.Post;
+import ru.yandex.practicum.model.Search;
+import ru.yandex.practicum.utils.ArrayUtils;
 
+import java.sql.Array;
 import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
@@ -25,11 +27,9 @@ public class PostRepository {
         post.setId(rs.getLong("id"));
         post.setTitle(rs.getString("title"));
         post.setText(rs.getString("text"));
+        post.setTags(ArrayUtils.sqlArrayToList(rs.getArray("tags")));
         post.setLikesCount(rs.getInt("likes_count"));
         post.setCommentsCount(rs.getInt("comments_count"));
-        post.setImage(rs.getBytes("image"));
-        post.setCreatedAt(rs.getTimestamp("created_at").toLocalDateTime());
-        post.setUpdatedAt(rs.getTimestamp("updated_at").toLocalDateTime());
         return post;
     };
 
@@ -51,19 +51,19 @@ public class PostRepository {
     // Создание нового поста
     public Post save(Post post) {
         String sql = """
-            INSERT INTO posts (title, text, likes_count, comments_count, image, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?, NOW(), NOW())
-            RETURNING id
-            """;
+                INSERT INTO posts (title, text, tags, likes_count, comments_count)
+                VALUES (?, ?, ?, ?, ?)
+                RETURNING id
+                """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
         jdbcTemplate.update(connection -> {
             java.sql.PreparedStatement ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
             ps.setString(1, post.getTitle());
             ps.setString(2, post.getText());
-            ps.setInt(3, post.getLikesCount());
-            ps.setInt(4, post.getCommentsCount());
-            ps.setBytes(5, post.getImage());
+            ps.setArray(3, ArrayUtils.listToSqlArray(connection, "VARCHAR", post.getTags()));
+            ps.setInt(4, post.getLikesCount());
+            ps.setInt(5, post.getCommentsCount());
             return ps;
         }, keyHolder);
 
@@ -74,15 +74,14 @@ public class PostRepository {
     // Обновление поста
     public void update(Post post) {
         String sql = """
-            UPDATE posts
-            SET title = ?, text = ?, image = ?, updated_at = NOW()
-            WHERE id = ?
-            """;
+                UPDATE posts
+                SET title = ?, text = ?, updated_at = NOW()
+                WHERE id = ?
+                """;
 
         jdbcTemplate.update(sql,
                 post.getTitle(),
                 post.getText(),
-                post.getImage(),
                 post.getId()
         );
     }
@@ -99,55 +98,35 @@ public class PostRepository {
         jdbcTemplate.update(sql, id);
     }
 
-    // Получение картинки поста
-    public byte[] getImage(Long id) {
-        String sql = "SELECT image FROM posts WHERE id = ?";
-        try {
-            return jdbcTemplate.queryForObject(sql, byte[].class, id);
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    // Установка картинки поста
-    public void setImage(Long id, byte[] image) {
-        String sql = "UPDATE posts SET image = ?, updated_at = NOW() WHERE id = ?";
-        jdbcTemplate.update(sql, image, id);
-    }
-
     // Пагинированный поиск постов
-    public List<Post> findAll(String search, int pageNumber, int pageSize) {
-        int offset = (pageNumber - 1) * pageSize;
+    public List<Post> findAll(String search) {
 
         String sql = """
-            SELECT * FROM posts
-            WHERE title ILIKE ? OR text ILIKE ?
-            ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
-            """;
+                SELECT * FROM posts
+                WHERE title ILIKE ?
+                AND ( string_to_array(?,',')::varchar[] <@ tags or string_to_array(?,',')::varchar[] = ARRAY[]::varchar[])
+                ORDER BY created_at DESC
+                """;
+        Search searchObject = ArrayUtils.splitStringAndTags(search, jdbcTemplate);
 
         return jdbcTemplate.query(
                 sql,
                 POST_ROW_MAPPER,
-                "%" + search + "%",
-                "%" + search + "%",
-                pageSize,
-                offset
+                "%" + searchObject.getSearchString() + "%",
+                searchObject.getTagsString(),
+                searchObject.getTagsString()
         );
     }
 
-    // Подсчёт общего числа постов по поиску
-    public int countBySearch(String search) {
-        String sql = """
-            SELECT COUNT(*) FROM posts
-            WHERE title ILIKE ? OR text ILIKE ?
-            """;
 
-        return jdbcTemplate.queryForObject(
-                sql,
-                Integer.class,
-                "%" + search + "%",
-                "%" + search + "%"
-        );
+
+    public void incrementComments(Long postId) {
+        String sql = "UPDATE posts SET comments_count = comments_count + 1 WHERE id = ?";
+        jdbcTemplate.update(sql, postId);
+    }
+
+    public void decrementComments(Long postId) {
+        String sql = "UPDATE posts SET comments_count = comments_count - 1 WHERE id = ?";
+        jdbcTemplate.update(sql, postId);
     }
 }

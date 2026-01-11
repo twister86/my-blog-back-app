@@ -5,7 +5,7 @@ FROM eclipse-temurin:21-jre-jammy
 WORKDIR /app
 
 # Копируем собранный WAR‑файл (предполагается, что он лежит в target/)
-COPY target/blog-backend-1.0-SNAPSHOT.war /app/app.war
+COPY target/my-blog-back-app-1.0-SNAPSHOT.war /app/app.war
 
 # Открываем порт 8080
 EXPOSE 8080

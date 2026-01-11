@@ -1,27 +1,19 @@
-package ru.practicum.my_blog_back_app.controllers;
+package ru.yandex.practicum.controller;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import ru.practicum.my_blog_back_app.model.Comment;
-import ru.practicum.my_blog_back_app.model.PagedPostsResponse;
-import ru.practicum.my_blog_back_app.model.Post;
-import ru.practicum.my_blog_back_app.services.PostService;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
+import ru.yandex.practicum.model.Comment;
+import ru.yandex.practicum.model.PagedPostsResponse;
+import ru.yandex.practicum.model.Post;
+import ru.yandex.practicum.services.PostService;
 
-import java.io.IOException;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/posts")
+@CrossOrigin
 public class PostController {
+
 
     private final PostService postService;
 
@@ -40,6 +32,7 @@ public class PostController {
         return ResponseEntity.ok(response);
     }
 
+
     // 2. Получение поста по ID
     @GetMapping("/{id}")
     public ResponseEntity<Post> getPost(@PathVariable Long id) {
@@ -51,7 +44,7 @@ public class PostController {
     @PostMapping
     public ResponseEntity<Post> createPost(@RequestBody Post post) {
         Post createdPost = postService.createPost(post);
-        return ResponseEntity.status(201).body(createdPost);
+        return ResponseEntity.ok(createdPost);
     }
 
     // 4. Обновление поста
@@ -69,7 +62,7 @@ public class PostController {
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletePost(@PathVariable Long id) {
         postService.deletePost(id);
-        return ResponseEntity.noContent().build(); // 204 No Content
+        return ResponseEntity.ok().build(); // 204 No Content
     }
 
     // 6. Увеличение числа лайков
@@ -79,30 +72,6 @@ public class PostController {
         return ResponseEntity.ok(newLikesCount);
     }
 
-    // 7. Обновление картинки поста
-    @PutMapping("/{id}/image")
-    public ResponseEntity<Void> updateImage(
-            @PathVariable Long id,
-            @RequestParam("image") MultipartFile file) throws IOException {
-
-        byte[] imageBytes = file.getBytes();
-        postService.updateImage(id, imageBytes);
-        return ResponseEntity.ok().build();
-    }
-
-    // 8. Получение картинки поста
-    @GetMapping("/{id}/image")
-    public ResponseEntity<byte[]> getImage(@PathVariable Long id) {
-        byte[] image = postService.getImage(id);
-
-        if (image == null || image.length == 0) {
-            return ResponseEntity.noContent().build(); // 204 No Content
-        }
-
-        return ResponseEntity.ok()
-                .header("Content-Type", "image/jpeg") // Уточните MIME-тип при необходимости
-                .body(image);
-    }
 
     // 9. Получение комментариев поста
     @GetMapping("/{postId}/comments")
@@ -118,24 +87,26 @@ public class PostController {
             @RequestBody Comment comment) {
 
         Comment createdComment = postService.createComment(postId, comment);
-        return ResponseEntity.status(201).body(createdComment);
+        return ResponseEntity.ok(createdComment);
     }
 
     // 11. Обновление комментария
-    @PutMapping("/comments/{commentId}")
-    public ResponseEntity<Void> updateComment(
+    @PutMapping("/{postId}/comments/{commentId}")
+    public ResponseEntity<Comment> updateComment(
+            @PathVariable Long postId,
             @PathVariable Long commentId,
             @RequestBody Comment comment) {
 
         comment.setId(commentId);
-        postService.updateComment(commentId, comment);
-        return ResponseEntity.ok().build();
+        comment.setPostId(postId);
+        postService.updateComment(comment);
+        return ResponseEntity.ok(comment);
     }
 
     // 12. Удаление комментария
-    @DeleteMapping("/comments/{commentId}")
+    @DeleteMapping("/{postId}/comments/{commentId}")
     public ResponseEntity<Void> deleteComment(@PathVariable Long commentId) {
         postService.deleteComment(commentId);
-        return ResponseEntity.noContent().build(); // 204 No Content
+        return ResponseEntity.ok().build();
     }
 }
