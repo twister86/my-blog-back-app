@@ -1,9 +1,14 @@
 package ru.yandex.practicum.controller;
 
+import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import ru.yandex.practicum.dto.CommentResponse;
+import ru.yandex.practicum.dto.PostResponse;
+import ru.yandex.practicum.mapper.CommentMapper;
+import ru.yandex.practicum.mapper.PostMapper;
 import ru.yandex.practicum.model.Comment;
-import ru.yandex.practicum.model.PagedPostsResponse;
+import ru.yandex.practicum.dto.PagedPostsResponse;
 import ru.yandex.practicum.model.Post;
 import ru.yandex.practicum.services.PostService;
 
@@ -12,14 +17,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/posts")
 @CrossOrigin
+@AllArgsConstructor
 public class PostController {
 
+    private final PostMapper postMapper;
 
     private final PostService postService;
 
-    public PostController(PostService postService) {
-        this.postService = postService;
-    }
+    private final CommentMapper commentMapper;
 
     // 1. Получение пагинированного списка постов (поиск + пагинация)
     @GetMapping
@@ -35,26 +40,26 @@ public class PostController {
 
     // 2. Получение поста по ID
     @GetMapping("/{id}")
-    public ResponseEntity<Post> getPost(@PathVariable Long id) {
-        Post post = postService.getPost(id);
+    public ResponseEntity<PostResponse> getPost(@PathVariable Long id) {
+        PostResponse post = postMapper.toDto(postService.getPost(id));
         return ResponseEntity.ok(post);
     }
 
     // 3. Создание поста
     @PostMapping
-    public ResponseEntity<Post> createPost(@RequestBody Post post) {
-        Post createdPost = postService.createPost(post);
+    public ResponseEntity<PostResponse> createPost(@RequestBody PostResponse post) {
+        PostResponse createdPost = postMapper.toDto(postService.createPost(postMapper.toEntity(post)));
         return ResponseEntity.ok(createdPost);
     }
 
     // 4. Обновление поста
     @PutMapping("/{id}")
-    public ResponseEntity<Post> updatePost(
+    public ResponseEntity<PostResponse> updatePost(
             @PathVariable Long id,
-            @RequestBody Post post) {
+            @RequestBody PostResponse post) {
 
         post.setId(id);
-        Post updatedPost = postService.updatePost(post);
+        PostResponse updatedPost = postMapper.toDto(postService.updatePost(postMapper.toEntity(post)));
         return ResponseEntity.ok(updatedPost);
     }
 
@@ -75,32 +80,31 @@ public class PostController {
 
     // 9. Получение комментариев поста
     @GetMapping("/{postId}/comments")
-    public ResponseEntity<List<Comment>> getComments(@PathVariable Long postId) {
-        List<Comment> comments = postService.getComments(postId);
+    public ResponseEntity<List<CommentResponse>> getComments(@PathVariable Long postId) {
+        List<CommentResponse> comments = postService.getComments(postId).stream().map(commentMapper::toDto).toList();
         return ResponseEntity.ok(comments);
     }
 
     // 10. Создание комментария к посту
     @PostMapping("/{postId}/comments")
-    public ResponseEntity<Comment> createComment(
+    public ResponseEntity<CommentResponse> createComment(
             @PathVariable Long postId,
-            @RequestBody Comment comment) {
+            @RequestBody CommentResponse comment) {
 
-        Comment createdComment = postService.createComment(postId, comment);
+        CommentResponse createdComment = commentMapper.toDto(postService.createComment(postId, commentMapper.toEntity(comment)));
         return ResponseEntity.ok(createdComment);
     }
 
     // 11. Обновление комментария
     @PutMapping("/{postId}/comments/{commentId}")
-    public ResponseEntity<Comment> updateComment(
+    public ResponseEntity<CommentResponse> updateComment(
             @PathVariable Long postId,
             @PathVariable Long commentId,
-            @RequestBody Comment comment) {
+            @RequestBody CommentResponse comment) {
 
         comment.setId(commentId);
         comment.setPostId(postId);
-        postService.updateComment(comment);
-        return ResponseEntity.ok(comment);
+        return ResponseEntity.ok(commentMapper.toDto(postService.updateComment(commentMapper.toEntity(comment))));
     }
 
     // 12. Удаление комментария
