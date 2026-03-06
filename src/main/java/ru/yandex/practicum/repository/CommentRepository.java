@@ -63,9 +63,10 @@ public class CommentRepository {
     }
 
     // Обновление комментария
-    public void update(Comment comment) {
+    public Comment update(Comment comment) {
         String sql = "UPDATE comments SET text = ? WHERE id = ?";
         jdbcTemplate.update(sql, comment.getText(), comment.getId());
+        return comment;
     }
 
     // Удаление комментария

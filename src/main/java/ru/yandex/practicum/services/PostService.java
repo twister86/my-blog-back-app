@@ -2,7 +2,7 @@ package ru.yandex.practicum.services;
 
 import org.springframework.stereotype.Service;
 import ru.yandex.practicum.model.Comment;
-import ru.yandex.practicum.model.PagedPostsResponse;
+import ru.yandex.practicum.dto.PagedPostsResponse;
 import ru.yandex.practicum.model.Post;
 import ru.yandex.practicum.repository.CommentRepository;
 import ru.yandex.practicum.repository.PostRepository;
@@ -101,8 +101,8 @@ public class PostService {
     }
 
     // 11. Обновление комментария
-    public void updateComment(Comment comment) {
-        commentRepository.update(comment);
+    public Comment updateComment(Comment comment) {
+        return commentRepository.update(comment);
     }
 
     // 12. Удаление комментария

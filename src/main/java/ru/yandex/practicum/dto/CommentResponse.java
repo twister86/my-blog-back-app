@@ -1,4 +1,4 @@
-package ru.yandex.practicum.model;
+package ru.yandex.practicum.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -7,8 +7,9 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class Search {
-    private String searchString;
+public class CommentResponse {
 
-    private String tagsString;
+    private Long id;
+    private String text;
+    private Long postId;
 }
